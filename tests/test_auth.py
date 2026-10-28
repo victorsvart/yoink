@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from yoink.auth import SessionCookie, SessionStore, login
 from yoink.errors import YoinkError
@@ -117,9 +118,9 @@ def test_browser_login_failure_preserves_saved_session(tmp_path: Path) -> None:
     with patch("yoink.auth.sync_playwright") as playwright:
         browser = playwright.return_value.__enter__.return_value.chromium.launch.return_value
         context = browser.new_context.return_value
-        context.new_page.return_value.get_by_test_id.return_value.wait_for.side_effect = (
-            PlaywrightError("timeout with SECRET diagnostic")
-        )
+        home = context.new_page.return_value.get_by_test_id.return_value
+        outcome = home.or_.return_value.and_.return_value.first
+        outcome.wait_for.side_effect = PlaywrightError("timeout with SECRET diagnostic")
         with pytest.raises(YoinkError, match="did not complete") as error:
             login(store, timeout=1)
         browser.close.assert_called_once()
@@ -132,6 +133,7 @@ def test_browser_login_saves_only_session_cookies(tmp_path: Path) -> None:
     with patch("yoink.auth.sync_playwright") as playwright:
         browser = playwright.return_value.__enter__.return_value.chromium.launch.return_value
         context = browser.new_context.return_value
+        context.new_page.return_value.get_by_text.return_value.first.is_visible.return_value = False
         context.cookies.return_value = [
             {
                 "domain": ".x.com",
@@ -147,3 +149,33 @@ def test_browser_login_saves_only_session_cookies(tmp_path: Path) -> None:
         login(store)
     assert store.load() == session()
     assert list(store.directory.iterdir()) == [store.path]
+
+
+def test_limited_login_is_actionable_and_does_not_replace_session(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path / "private")
+    store.save(session())
+    with patch("yoink.auth.sync_playwright") as playwright:
+        browser = playwright.return_value.__enter__.return_value.chromium.launch.return_value
+        context = browser.new_context.return_value
+        context.new_page.return_value.get_by_text.return_value.first.is_visible.return_value = True
+        context.new_page.return_value.get_by_test_id.return_value.is_visible.return_value = False
+        with pytest.raises(YoinkError, match=r"temporarily limited.*--from-browser"):
+            login(store, timeout=1)
+        browser.close.assert_called_once()
+        context.cookies.assert_not_called()
+    assert store.load() == session()
+
+
+def test_login_timeout_is_distinct_from_missing_browser(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path / "private")
+    with patch("yoink.auth.sync_playwright") as playwright:
+        browser = playwright.return_value.__enter__.return_value.chromium.launch.return_value
+        page = browser.new_context.return_value.new_page.return_value
+        home = page.get_by_test_id.return_value
+        outcome = home.or_.return_value.and_.return_value.first
+        outcome.wait_for.side_effect = PlaywrightTimeoutError("SECRET")
+        with pytest.raises(YoinkError, match="timed out") as error:
+            login(store, timeout=1)
+    assert "install chromium" not in str(error.value)
+    assert "SECRET" not in str(error.value)
+    assert not store.path.exists()

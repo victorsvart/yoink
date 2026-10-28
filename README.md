@@ -33,6 +33,7 @@ uv run playwright install chromium
 uv run yoink doctor
 
 uv run yoink login
+uv run yoink login --from-browser safari
 uv run yoink 'https://x.com/USER/status/ID'
 uv run yoink download 'https://x.com/USER/status/ID' --quality 720p --output ./videos
 uv run yoink logout
@@ -72,6 +73,30 @@ signed-in home page, saves only X cookies, and closes the browser. It never read
 or stores password form fields. The timeout defaults to five minutes; extend it
 with `uv run yoink login --timeout 600`.
 
+If you are already signed into X in your usual browser, reuse that session instead
+of making another sign-in attempt:
+
+```bash
+uv run yoink login --from-browser safari
+uv run yoink login --from-browser chrome --profile "Profile 1"
+```
+
+Choose the browser that has your working X session: `brave`, `chrome`, `chromium`,
+`edge`, `firefox`, `opera`, `safari`, `vivaldi`, or `whale`. Omit `--profile` to use
+yt-dlp's default profile selection. A profile name or path may be supplied explicitly;
+Safari accepts a cookie database path. The reader accesses the selected browser's
+cookie database locally, but Yoink saves only cookies for X/Twitter domains. It does
+not submit a login, modify the source browser, or export a cookie file for other sites.
+OS access controls still apply; macOS may require Keychain or Privacy & Security
+permission for the terminal/app running Yoink. Yoink does not change those settings.
+
+If X displays “We've temporarily limited your login,” Yoink stops with an actionable
+error instead of waiting for a generic timeout. The same message may appear in a
+garbled onboarding response. This does not identify the reason for the restriction.
+Stop retrying login; [X's guidance for temporary lockouts](https://help.x.com/en/managing-your-account/locked-out-after-too-many-login-attempts)
+is to wait about an hour. Reusing a working browser session avoids another login
+attempt but cannot override account restrictions or guarantee access to a post.
+
 Sessions live outside the repository in the OS user data directory:
 
 - macOS: `~/Library/Application Support/yoink/cookies.txt`
@@ -102,6 +127,7 @@ URL validation (`providers/twitter.py`), authentication (`auth.py`), extraction 
 downloads (`download.py`), runtime JSON validation (`json_data.py`), and dependency
 checks (`doctor.py`). Twitter/X is the only provider. Profiles, searches, account
 crawling, live streams, Spaces, unattended challenges, and hosting are outside scope.
+`browser_cookies.py` isolates the typed boundary to yt-dlp's browser cookie reader.
 
 To update extraction support:
 
@@ -139,6 +165,10 @@ Verification on 2026-10-28:
   not contact X or log in to an account.
 - Real interactive X login/2FA and authenticated downloads remain unverified.
   Some older public fixtures returned no video or upstream media errors.
+- A real interactive login attempt was reported to receive X's temporary login
+  limit. Browser-session import is tested against a synthetic Firefox cookie
+  database, and refusal detection against a synthetic page in real Chromium.
+  Importing a real user browser session and authenticated downloads remain unverified.
 
 Tests need no X credentials or internet access. Media integration tests require
 FFmpeg/ffprobe and a local HTTP listener; the browser test requires Chromium.

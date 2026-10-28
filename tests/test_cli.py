@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
+from yoink.browser_cookies import CookieBrowser
 from yoink.cli import main
 from yoink.errors import YoinkError
 from yoink.models import DownloadResult, Quality
@@ -55,3 +56,24 @@ def test_interrupt_exit_status(capsys: pytest.CaptureFixture[str]) -> None:
     with patch("yoink.cli.Downloader.download", side_effect=KeyboardInterrupt):
         assert main(["https://x.com/a/status/1"]) == 130
     assert "Complete:" not in capsys.readouterr().out
+
+
+def test_browser_import_does_not_launch_login(capsys: pytest.CaptureFixture[str]) -> None:
+    with patch("yoink.cli.import_browser_session") as imported, patch("yoink.cli.login") as login:
+        assert main(["login", "--from-browser", "chrome", "--profile", "Profile 1"]) == 0
+    assert imported.call_args.args[1] is CookieBrowser.CHROME
+    assert imported.call_args.kwargs["profile"] == "Profile 1"
+    login.assert_not_called()
+    assert "saved privately" in capsys.readouterr().out
+
+
+def test_profile_requires_browser() -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["login", "--profile", "Profile 1"])
+    assert error.value.code == 2
+
+
+def test_failed_import_does_not_report_success(capsys: pytest.CaptureFixture[str]) -> None:
+    with patch("yoink.cli.import_browser_session", side_effect=YoinkError("No active X session")):
+        assert main(["login", "--from-browser", "safari"]) == 1
+    assert "saved privately" not in capsys.readouterr().out

@@ -1,6 +1,7 @@
 """Interactive login and a private, cookie-only session store outside Git."""
 
 import os
+import re
 import stat
 import tempfile
 import time
@@ -8,12 +9,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from platformdirs import user_data_path
-from playwright.sync_api import BrowserContext, sync_playwright
+from playwright.sync_api import BrowserContext, Page, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from yoink.browser_cookies import CookieBrowser, read_browser_cookies
 from yoink.errors import YoinkError
 
 _DOMAINS = {"x.com", ".x.com", "twitter.com", ".twitter.com"}
+_LOGIN_LIMIT = re.compile(r"temporarily limited your login", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -157,6 +161,54 @@ class SessionStore:
         return existed
 
 
+def import_browser_session(
+    store: SessionStore,
+    browser: CookieBrowser,
+    *,
+    profile: str | None = None,
+) -> None:
+    """Copy only X cookies; do not attempt a login or export the whole cookie jar."""
+    jar = read_browser_cookies(browser, profile)
+    cookies = tuple(
+        SessionCookie(
+            cookie.domain,
+            cookie.path,
+            cookie.secure,
+            cookie.expires,
+            cookie.name,
+            cookie.value or "",
+            cookie.has_nonstandard_attr("HttpOnly") or cookie.name == "auth_token",
+        )
+        for cookie in jar
+        if cookie.domain in _DOMAINS
+    )
+    try:
+        _validate(cookies)
+    except YoinkError:
+        raise YoinkError(
+            "No active X session was found in that browser/profile. Check that X works there "
+            "and select the signed-in profile with --profile if needed."
+        ) from None
+
+    store.save(cookies)
+
+
+def wait_for_login(page: Page, *, timeout: int) -> None:
+    home = page.get_by_test_id("AppTabBar_Home_Link")
+    limited = page.get_by_text(_LOGIN_LIMIT)
+    # Hidden elements must not mask either a visible refusal or the home page.
+    visible_outcome = home.or_(limited).and_(page.locator(":visible"))
+    visible_outcome.first.wait_for(state="visible", timeout=timeout * 1000)
+    if home.is_visible():
+        return
+
+    raise YoinkError(
+        "X temporarily limited this login. Stop login attempts and try later; "
+        "X advises waiting about an hour for temporary lockouts. If you already "
+        "have a working browser session, use 'yoink login --from-browser BROWSER'."
+    )
+
+
 def login(store: SessionStore, *, timeout: int = 300) -> None:
     """Wait for the user to finish login/2FA; never read password form fields."""
     try:
@@ -172,11 +224,8 @@ def login(store: SessionStore, *, timeout: int = 300) -> None:
                     for cookie in previous:
                         cookie.restore(context)
                 page = context.new_page()
-                page.goto("https://x.com/i/flow/login", wait_until="domcontentloaded")
-                page.get_by_test_id("AppTabBar_Home_Link").wait_for(
-                    state="visible",
-                    timeout=timeout * 1000,
-                )
+                page.goto("https://x.com/login", wait_until="domcontentloaded")
+                wait_for_login(page, timeout=timeout)
                 cookies = tuple(
                     SessionCookie(
                         cookie.get("domain", ""),
@@ -193,6 +242,12 @@ def login(store: SessionStore, *, timeout: int = 300) -> None:
                 store.save(cookies)
             finally:
                 browser.close()
+    except PlaywrightTimeoutError:
+        raise YoinkError(
+            "X login timed out before the signed-in home page appeared. If X limits your login, "
+            "stop retrying and wait. You can reuse a working session with "
+            "'yoink login --from-browser BROWSER', or increase --timeout for manual login/2FA."
+        ) from None
     except PlaywrightError:
         raise YoinkError(
             "Browser login did not complete. Run 'uv run playwright install chromium' if needed, "

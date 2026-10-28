@@ -6,7 +6,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from yoink import __version__
-from yoink.auth import SessionStore, login
+from yoink.auth import SessionStore, import_browser_session, login
+from yoink.browser_cookies import CookieBrowser
 from yoink.doctor import check_system
 from yoink.download import Downloader
 from yoink.errors import YoinkError
@@ -20,6 +21,8 @@ class Arguments(argparse.Namespace):
     quality: Quality
     output: Path
     timeout: int
+    from_browser: CookieBrowser | None
+    profile: str | None
 
 
 def _timeout(value: str) -> int:
@@ -57,6 +60,13 @@ def _parser() -> argparse.ArgumentParser:
     auth.add_argument(
         "--timeout", type=_timeout, default=300, help="Login timeout in seconds (default: 300)"
     )
+    auth.add_argument(
+        "--from-browser",
+        type=CookieBrowser,
+        choices=list(CookieBrowser),
+        help="Copy an existing browser's X session without making a new login attempt",
+    )
+    auth.add_argument("--profile", help="Browser profile name/path for --from-browser")
     commands.add_parser("logout", help="Delete the locally saved session")
     commands.add_parser("doctor", help="Check Python, downloader, FFmpeg, and browser dependencies")
     return parser
@@ -77,7 +87,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if values and values[0].startswith(("https://", "http://")):
         values.insert(0, "download")
     args = Arguments()
-    _parser().parse_args(values, namespace=args)
+    parser = _parser()
+    parser.parse_args(values, namespace=args)
+    if args.command == "login" and args.profile is not None and args.from_browser is None:
+        parser.error("--profile requires --from-browser")
     store = SessionStore()
     try:
         if args.command == "doctor":
@@ -87,8 +100,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Session location: {store.directory}")
             return 0 if all(check.ready for check in checks) else 1
         if args.command == "login":
-            print("Finish X login and 2FA in the browser. Waiting for your signed-in home page…")
-            login(store, timeout=args.timeout)
+            if args.from_browser is not None:
+                print("Reading the selected browser's session. Only X cookies will be saved.")
+                import_browser_session(store, args.from_browser, profile=args.profile)
+            else:
+                print(
+                    "Finish X login and 2FA in the browser. Waiting for your signed-in home page…"
+                )
+                login(store, timeout=args.timeout)
             print(
                 "Signed-in session saved privately. "
                 "You can now download posts your account can access."

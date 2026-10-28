@@ -16,7 +16,7 @@ from unittest.mock import patch
 import pytest
 from playwright.sync_api import sync_playwright
 
-from yoink.auth import SessionCookie, SessionStore
+from yoink.auth import SessionCookie, SessionStore, wait_for_login
 from yoink.download import Downloader
 from yoink.errors import YoinkError
 from yoink.json_data import object_data, object_list, parse_object
@@ -220,5 +220,36 @@ def test_real_browser_cookie_roundtrip(tmp_path: Path) -> None:
             restored = context.cookies("https://x.com/")
             assert {cookie.get("name") for cookie in restored} == {"auth_token", "ct0"}
             assert all(cookie.get("httpOnly") and cookie.get("secure") for cookie in restored)
+        finally:
+            browser.close()
+
+
+def test_real_browser_login_outcomes() -> None:
+    with sync_playwright() as playwright:
+        if not Path(playwright.chromium.executable_path).is_file():
+            pytest.skip("Run playwright install chromium for the real browser test")
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.set_content(
+                '<a data-testid="AppTabBar_Home_Link" hidden>Home</a>'
+                "<pre>õ��� onboarding errors: Weâ€™ve temporarily limited your login. "
+                "Please try again later. synthetic-private-data</pre>"
+            )
+            with pytest.raises(YoinkError, match="temporarily limited") as error:
+                wait_for_login(page, timeout=1)
+            assert "synthetic-private-data" not in str(error.value)
+
+            page.set_content(
+                '<a data-testid="AppTabBar_Home_Link">Home</a>'
+                "<p hidden>We've temporarily limited your login.</p>"
+            )
+            wait_for_login(page, timeout=1)
+
+            page.set_content(
+                '<a data-testid="AppTabBar_Home_Link">Home</a>'
+                "<p>A post discussing: We've temporarily limited your login.</p>"
+            )
+            wait_for_login(page, timeout=1)
         finally:
             browser.close()
