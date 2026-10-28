@@ -27,6 +27,7 @@ class Receipt:
     packages: dict[str, str] = field(default_factory=dict[str, str])
     path_file: str = ""
     path_block: str = ""
+    browser: bool | None = None
 
     def save(self) -> None:
         destination = Path(self.root) / _RECEIPT
@@ -50,7 +51,11 @@ def load_receipt(root: Path) -> Receipt | None:
         if not isinstance(raw, dict):
             raise ValueError
         data = cast(dict[str, object], raw)
-        if set(data) != set(Receipt.__dataclass_fields__):
+        fields = set(Receipt.__dataclass_fields__)
+        if set(data) not in (fields, fields - {"browser"}):
+            raise ValueError
+        browser = data.get("browser")
+        if browser is not None and not isinstance(browser, bool):
             raise ValueError
         for key in ("root", "command", "manager", "path_file", "path_block"):
             if not isinstance(data[key], str):
@@ -73,6 +78,7 @@ def load_receipt(root: Path) -> Receipt | None:
             packages=cast(dict[str, str], packages),
             path_file=cast(str, data["path_file"]),
             path_block=cast(str, data["path_block"]),
+            browser=browser,
         )
         if receipt.root != str(root) or receipt.manager not in ("", "brew", "dpkg"):
             raise ValueError
@@ -192,6 +198,7 @@ def configure(
         raise YoinkError("This installation already uses a different command directory.")
     if python_owned and "python" not in receipt.owned:
         receipt.owned.append("python")
+    receipt.browser = browser
     receipt.save()
     if ffmpeg:
         install_packages(receipt, ["ffmpeg"])
@@ -298,13 +305,13 @@ def remove_packages(receipt: Receipt) -> None:
     receipt.save()
 
 
-def uninstall(*, keep_session: bool = False) -> None:
+def managed_installation() -> Receipt:
     prefix = Path(sys.prefix)
     root = prefix.parent.parent
     if prefix != root / "tools" / "yoink-cli" or prefix.resolve() != prefix:
         raise YoinkError(
             "This command supports installer-managed copies. "
-            "Remove source/tool installs with their original package manager."
+            "Use the original package manager for source/tool installs."
         )
     receipt = load_receipt(root)
     if receipt is None:
@@ -312,6 +319,13 @@ def uninstall(*, keep_session: bool = False) -> None:
             "This installation has no ownership receipt. Rerun the current installer first; "
             "older shared dependencies will be preserved."
         )
+    return receipt
+
+
+def uninstall(*, keep_session: bool = False) -> None:
+    receipt = managed_installation()
+    root = Path(receipt.root)
+    prefix = root / "tools" / "yoink-cli"
     print("\nUninstall Yoink\n--------------\n")
     print(f"Remove: {prefix}\nRemove command: {receipt.command}")
     for name in receipt.owned:

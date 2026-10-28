@@ -52,6 +52,9 @@ as proven working features.
 - Record dependency ownership across installer updates. `yoink uninstall` must ask
   for terminal confirmation, remove only recorded additions, preserve pre-existing
   or subsequently changed/shared packages, and never remove downloaded videos.
+- `yoink update` must verify the release installer before executing it, preserve
+  the existing install paths and dependency ownership receipt, and retain browser
+  opt-outs. Keep update and install dependency handling in the same installer.
 - Keep both mypy and Pyright strict. Validate untyped subprocess data at runtime;
   do not hide typing failures with blanket ignores or untyped application APIs.
 - Integration tests use real local media downloads/merges and Chromium, but substitute

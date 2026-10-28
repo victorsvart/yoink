@@ -14,6 +14,7 @@ from yoink.errors import YoinkError
 from yoink.installation import uninstall, use_private_browser
 from yoink.models import DownloadRequest, Progress, Quality
 from yoink.providers.twitter import parse_post
+from yoink.update import update
 
 
 class Arguments(argparse.Namespace):
@@ -25,6 +26,8 @@ class Arguments(argparse.Namespace):
     from_browser: CookieBrowser | None
     profile: str | None
     keep_session: bool
+    check_only: bool
+    repair: bool
 
 
 def _timeout(value: str) -> int:
@@ -76,6 +79,14 @@ def _parser() -> argparse.ArgumentParser:
         "uninstall", help="Remove Yoink and dependencies added by its installer"
     )
     removal.add_argument("--keep-session", action="store_true", help="Keep Yoink's saved X session")
+    refresh = commands.add_parser("update", help="Update Yoink while keeping dependency ownership")
+    refresh_mode = refresh.add_mutually_exclusive_group()
+    refresh_mode.add_argument(
+        "--check", dest="check_only", action="store_true", help="Check without installing"
+    )
+    refresh_mode.add_argument(
+        "--repair", action="store_true", help="Retry setup even when already on the latest release"
+    )
     commands.add_parser("doctor", help="Check Python, downloader, FFmpeg, and browser dependencies")
     return parser
 
@@ -134,6 +145,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             uninstall(keep_session=args.keep_session)
             return 0
         use_private_browser()
+        if args.command == "update":
+            update(check_only=args.check_only, repair=args.repair)
+            return 0
         if args.command == "doctor":
             checks = check_system()
             for check in checks:

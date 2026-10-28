@@ -90,6 +90,18 @@ def test_uninstall_dispatches_without_login_or_download() -> None:
     login.assert_not_called()
 
 
+def test_update_check_dispatches_without_login_or_download() -> None:
+    with (
+        patch("yoink.cli.update") as refresh,
+        patch("yoink.cli.Downloader.download") as download,
+        patch("yoink.cli.login") as login,
+    ):
+        assert main(["update", "--check"]) == 0
+    refresh.assert_called_once_with(check_only=True, repair=False)
+    download.assert_not_called()
+    login.assert_not_called()
+
+
 def test_failed_import_does_not_report_success(capsys: pytest.CaptureFixture[str]) -> None:
     with (
         patch("yoink.cli.import_browser_session", side_effect=YoinkError("No active X session")),
