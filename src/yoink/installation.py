@@ -125,7 +125,7 @@ def install_packages(receipt: Receipt, packages: list[str]) -> None:
     receipt.save()
     print("Installing missing system packages; recording what Yoink adds...", flush=True)
     try:
-        if manager == "brew":
+        if sys.platform == "darwin":
             environment = dict(
                 os.environ,
                 HOMEBREW_NO_INSTALL_UPGRADE="1",
