@@ -3,10 +3,20 @@ set -euo pipefail
 
 RELEASES_URL="https://github.com/victorsvart/yoink/releases"
 UV_VERSION="0.13.6"
+YOINK_TEMP_DIR=""
 
 fail() { printf '\nyoink installer: %s\n' "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 download() { curl --proto '=https' --proto-redir '=https' --tlsv1.2 --fail --silent --show-error --location "$1" --output "$2"; }
+
+cleanup() {
+    # bash can drop main's locals before running EXIT. keep this path outside it
+    if [[ -n "$YOINK_TEMP_DIR" ]]; then
+        printf '\nRemoving temporary installer files...\n' >&2
+        rm -rf -- "$YOINK_TEMP_DIR"
+        YOINK_TEMP_DIR=""
+    fi
+}
 
 uv_is_compatible() {
     local found major minor patch required_major required_minor required_patch
@@ -122,7 +132,10 @@ Rerun this installer after setup. Nothing was installed."
         fail "sudo is needed to install system dependencies."
     fi
     temporary=$(mktemp -d)
-    trap 'rm -rf -- "$temporary"' EXIT
+    YOINK_TEMP_DIR="$temporary"
+    trap cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
     local installed_python="$data_directory/tools/yoink-cli/bin/python"
     if [[ -x "$installed_python" ]]; then
         python=$("$installed_python" -c 'import sys; from pathlib import Path; sys.exit(1) if sys.version_info < (3, 13) else print(Path(sys.executable).resolve())' 2>/dev/null || true)
@@ -236,9 +249,8 @@ Rerun this installer after setup. Nothing was installed."
     "$bin_directory/yoink" --version
     printf '\nInstalled. Try:\n  %s --help\n' "$bin_directory/yoink"
     offer_path_setup
-    # the EXIT trap runs after main returns, when its locals are already gone
-    rm -rf -- "$temporary"
-    trap - EXIT
+    cleanup
+    trap - EXIT INT TERM
     printf '\nRemoved temporary downloads and installer-only helpers.\n'
 }
 
