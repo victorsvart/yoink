@@ -17,9 +17,14 @@ class Quality(StrEnum):
     @property
     def selector(self) -> str:
         """turning quality choices into yt-dlp's format-selection syntax."""
-        # yt-dlp's little language: '+' joins streams, '/' tries fallbacks left to right
-        # bv*/wv* select best/worst video, which may already include audio;
-        # ba/wa select audio-only, b/w combined video+audio, and bv/wv video-only.
+        # the wizardry below is yt-dlp's little language
+        # '+' joins streams
+        # '/' tries fallbacks left to right
+        # bv*/wv* select best/worst video, which may already include audio
+        # ba/wa select audio-only
+        # b/w combined video+audio
+        # bv/wv video-only.
+        # check: https://github.com/yt-dlp/yt-dlp#format-selection
         if self is Quality.BEST:
             return "bv*+ba/b/bv"
         if self is Quality.WORST:

@@ -60,6 +60,8 @@ def _parser() -> argparse.ArgumentParser:
     auth.add_argument(
         "--timeout", type=_timeout, default=300, help="Login timeout in seconds (default: 300)"
     )
+
+    # i don't like the fact i have  to fallback to stealing cookies , but oh well
     auth.add_argument(
         "--from-browser",
         type=CookieBrowser,

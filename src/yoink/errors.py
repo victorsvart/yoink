@@ -7,9 +7,7 @@ class YoinkError(Exception):
 
 def extraction_error(diagnostic: str, *, authenticated: bool) -> YoinkError:
     """classifying failures because raw backend errors can leak session details."""
-    # Best effort, definitely not ideal: matching human-readable diagnostics is
-    # brittle and can misclassify errors when upstream wording changes or overlaps.
-    # Prefer structured error codes if yt-dlp exposes them through this interface.
+    # Best effort, definitely not ideal. May be a good first issue. TODO: come back to this one day
     text = diagnostic.lower()
     if any(word in text for word in ("requested format", "no video formats")):
         return YoinkError("No video matches this quality. Try --quality best or a higher limit.")

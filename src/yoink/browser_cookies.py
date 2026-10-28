@@ -34,7 +34,7 @@ class _QuietLogger:
 
 def read_browser_cookies(browser: CookieBrowser, profile: str | None) -> CookieJar:
     # no types from yt-dlp here, so narrowing the callable and checking the
-    # result before trusting it. the cast alone doesn't prove a damn thing
+    # result before trusting it. the cast alone doesn't prove shit
     try:
         extractor = cast(
             Callable[[str, str | None, _QuietLogger], object],
