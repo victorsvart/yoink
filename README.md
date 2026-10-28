@@ -5,7 +5,7 @@ Grab a video. Keep moving.
 Yoink is a typed Python CLI for downloading videos from individual Twitter/X
 posts without an X developer account or official API key.
 
-## Usage
+## Basic Usage
 
 ```bash
 yoink 'https://x.com/USER/status/ID'
