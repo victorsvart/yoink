@@ -1,4 +1,4 @@
-"""Read an explicitly selected browser's cookies through a typed yt-dlp boundary."""
+"""I read the chosen browser's cookies and keep yt-dlp's untyped bits here."""
 
 from collections.abc import Callable
 from enum import StrEnum
@@ -22,7 +22,7 @@ class CookieBrowser(StrEnum):
 
 
 class _QuietLogger:
-    """Drop upstream diagnostics, which may contain sensitive browser details."""
+    """I drop upstream logs. Leaking browser details would be a stupid feature."""
 
     def debug(self, message: object, *args: object, **kwargs: object) -> None:
         pass
@@ -33,8 +33,8 @@ class _QuietLogger:
 
 
 def read_browser_cookies(browser: CookieBrowser, profile: str | None) -> CookieJar:
-    # yt-dlp has no typing declarations for this API. Narrow the callable here
-    # and validate its result before using it in the rest of the application.
+    # yt-dlp gives me no types here. Lovely. I narrow the callable and check its
+    # result before letting it anywhere near the rest of my code.
     try:
         extractor = cast(
             Callable[[str, str | None, _QuietLogger], object],

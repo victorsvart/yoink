@@ -16,7 +16,7 @@ _POST_PATH = re.compile(
 
 
 def parse_post(url: str) -> Post:
-    """Accept individual post links only; strip tracking and media indices."""
+    """I accept post links and strip the tracking junk and media index."""
     try:
         parsed = urlsplit(url)
         valid = (
@@ -37,5 +37,5 @@ def parse_post(url: str) -> Post:
             "Use an individual X post URL; profiles, searches and Spaces aren't supported."
         )
     post_id = match.group(1)
-    # A video/2 link must still download all videos on the post.
+    # I still download the whole post when a link ends in /video/2. All means all.
     return Post(url=f"https://x.com/i/web/status/{post_id}", id=post_id)

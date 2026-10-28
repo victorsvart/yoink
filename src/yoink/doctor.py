@@ -1,4 +1,4 @@
-"""Read-only checks for runtime dependencies."""
+"""I check the tools before a missing binary wastes my afternoon."""
 
 import shutil
 import sys

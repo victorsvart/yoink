@@ -1,4 +1,4 @@
-"""CLI parsing and presentation; no provider extraction or login logic."""
+"""I parse commands and print results here. Extraction has its own mess."""
 
 import argparse
 import sys

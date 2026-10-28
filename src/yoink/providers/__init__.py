@@ -1,1 +1,1 @@
-"""Provider-specific URL handling. Only Twitter/X is supported initially."""
+"""I keep provider rules here. X is enough of a headache for the first release."""

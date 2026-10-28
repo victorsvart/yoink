@@ -1,4 +1,4 @@
-"""Runtime validation at the untyped subprocess JSON boundary."""
+"""I validate subprocess JSON. Valid syntax isn't a trustworthy schema."""
 
 import json
 from collections.abc import Mapping

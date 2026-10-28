@@ -1,4 +1,4 @@
-"""Typed yt-dlp subprocess adapter. Raw upstream output is never logged."""
+"""I wrap yt-dlp with types and keep its raw diagnostics off the terminal."""
 
 import json
 import os
@@ -129,7 +129,7 @@ class Downloader:
         cookies = self.store.load()
         output = request.output.expanduser().resolve()
         output.mkdir(parents=True, exist_ok=True)
-        # Signed media URLs and cookie copies exist only in a private temporary directory.
+        # I keep signed URLs and cookie copies in a private temp directory. No souvenirs.
         with tempfile.TemporaryDirectory(prefix="yoink-") as temporary:
             directory = Path(temporary)
             cookie_args: list[str] = []
@@ -206,7 +206,7 @@ class Downloader:
                             if on_progress:
                                 on_progress(parse_progress(line.removeprefix(_PROGRESS_PREFIX)))
                         else:
-                            # Bound diagnostics in memory; never display raw upstream output.
+                            # I bound the diagnostic buffer and keep its secrets off the terminal.
                             diagnostics.append(line[-4096:])
                             diagnostics = diagnostics[-20:]
                     returncode = process.wait()

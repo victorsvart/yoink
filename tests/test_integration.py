@@ -1,6 +1,6 @@
-"""Real local HTTP downloads, FFmpeg merges, and browser cookie reuse.
+"""I use real HTTP downloads, FFmpeg, and Chromium here.
 
-Only the Twitter metadata response is substituted. These tests do not contact X.
+I fake Twitter metadata. I'm not signing into X every time I run a test.
 """
 
 import json

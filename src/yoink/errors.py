@@ -1,12 +1,12 @@
-"""Safe, actionable errors; backend diagnostics may contain credentials."""
+"""I turn backend failures into useful errors without spilling secrets."""
 
 
 class YoinkError(Exception):
-    """An error whose message is safe to show to the user."""
+    """I can print this error without spilling credentials."""
 
 
 def extraction_error(diagnostic: str, *, authenticated: bool) -> YoinkError:
-    """Classify upstream output without ever echoing it or its media URLs."""
+    """I classify failures without parroting private diagnostics or media URLs."""
     # Best effort, definitely not ideal: matching human-readable diagnostics is
     # brittle and can misclassify errors when upstream wording changes or overlaps.
     # Prefer structured error codes if yt-dlp exposes them through this interface.

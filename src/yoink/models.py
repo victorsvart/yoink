@@ -1,4 +1,4 @@
-"""Validated values shared by the CLI and download backend."""
+"""I share typed requests and results between the CLI and downloader."""
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -16,8 +16,8 @@ class Quality(StrEnum):
 
     @property
     def selector(self) -> str:
-        """Build yt-dlp's format-selection expression for this quality."""
-        # yt-dlp syntax: '+' combines streams; '/' tries fallbacks left to right.
+        """I translate the quality choice into yt-dlp's format-selection syntax."""
+        # I have to speak yt-dlp here: '+' combines streams; '/' tries fallbacks in order.
         # bv*/wv* select best/worst video, which may already include audio;
         # ba/wa select audio-only, b/w combined video+audio, and bv/wv video-only.
         if self is Quality.BEST:
@@ -25,7 +25,7 @@ class Quality(StrEnum):
         if self is Quality.WORST:
             return "wv*+wa/w/wv"
 
-        # Apply the height cap to every video alternative, including silent video.
+        # I cap every video alternative. A fallback isn't a license to ignore --quality.
         limit = int(self.value.removesuffix("p"))
         return f"bv*[height<={limit}]+ba/b[height<={limit}]/bv[height<={limit}]"
 
