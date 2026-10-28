@@ -84,17 +84,23 @@ def _show_progress(progress: Progress) -> None:
 
 def _confirm_safari_access() -> None:
     print(
-        "Safari's cookies are protected by macOS privacy permissions.\n"
-        "After you continue, Yoink will request access to read Safari's cookie database.\n"
-        "Allow access if macOS asks. If no prompt appears and access is blocked, open\n"
-        "System Settings > Privacy & Security > Full Disk Access and allow the terminal/app\n"
-        "running Yoink (for example, Terminal or iTerm). You may need to quit and reopen it.\n"
-        "Only X/Twitter cookies will be saved in Yoink's private session store.",
+        "\nSafari cookie access\n"
+        "--------------------\n"
+        "\n"
+        "Full Disk Access must be enabled manually in macOS.\n"
+        "Yoink cannot request or grant this permission automatically.\n"
+        "\n"
+        "  1. Open System Settings > Privacy & Security > Full Disk Access.\n"
+        "  2. Enable access for the app running Yoink (Terminal, iTerm, etc.).\n"
+        "  3. Quit and reopen that app if macOS asks, then run this command again.\n"
+        "\n"
+        "If access is already enabled, you can continue.\n"
+        "Only X/Twitter cookies will be saved in Yoink's private session store.\n",
         file=sys.stderr,
         flush=True,
     )
     try:
-        answer = input("Press Enter to proceed, or Ctrl+C to cancel: ")
+        answer = input("Press Enter to read Safari cookies, or Ctrl+C to cancel: ")
     except EOFError:
         raise YoinkError(
             "Safari access was not confirmed. Run in an interactive terminal and press Enter "

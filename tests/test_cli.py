@@ -97,7 +97,8 @@ def test_safari_waits_for_enter_before_reading_cookies(capsys: pytest.CaptureFix
             imported.assert_not_called()
             assert "Press Enter" in prompt
             notice = capsys.readouterr().err
-            assert "request access" in notice
+            assert "Full Disk Access must be enabled manually" in notice
+            assert "cannot request or grant this permission automatically" in notice
             assert "Full Disk Access" in notice
             assert "Only X/Twitter cookies" in notice
             return ""
