@@ -5,6 +5,21 @@ Grab a video. Keep moving.
 Yoink is a typed Python CLI for downloading videos from individual Twitter/X
 posts without an X developer account or official API key.
 
+## Usage
+
+```bash
+yoink 'https://x.com/USER/status/ID'
+yoink download 'https://x.com/USER/status/ID' --quality 720p --output ./videos
+```
+
+Downloads all videos in the post. Files go into `~/Downloads` unless you
+set `--output`. Existing files are reused; completed files are kept if another
+video fails.
+
+Quality defaults to `best`. You can also use `worst`, `360p`, `480p`, `720p`,
+`1080p`, or `2160p`. A resolution sets the maximum video height: `720p` picks the
+best available video at or below 720 pixels tall, without upscaling.
+
 ## Install
 
 On macOS or Linux:
@@ -78,21 +93,6 @@ Only system packages recorded as newly installed by Yoink are eligible for remov
 Pre-existing tools, changed packages, and dependencies needed by other installed
 software are kept. Installations made before ownership tracking was added keep
 older dependencies whose ownership is unknown; rerun the current installer first.
-
-## Download
-
-```bash
-yoink 'https://x.com/USER/status/ID'
-yoink download 'https://x.com/USER/status/ID' --quality 720p --output ./videos
-```
-
-Downloads all videos in the post. Files go into `~/Downloads` unless you
-set `--output`. Existing files are reused; completed files are kept if another
-video fails.
-
-Quality defaults to `best`. You can also use `worst`, `360p`, `480p`, `720p`,
-`1080p`, or `2160p`. A resolution sets the maximum video height: `720p` picks the
-best available video at or below 720 pixels tall, without upscaling.
 
 ## Sign in
 
