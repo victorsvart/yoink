@@ -78,6 +78,18 @@ def test_profile_requires_browser() -> None:
     assert error.value.code == 2
 
 
+def test_uninstall_dispatches_without_login_or_download() -> None:
+    with (
+        patch("yoink.cli.uninstall") as removal,
+        patch("yoink.cli.Downloader.download") as download,
+        patch("yoink.cli.login") as login,
+    ):
+        assert main(["uninstall", "--keep-session"]) == 0
+    removal.assert_called_once_with(keep_session=True)
+    download.assert_not_called()
+    login.assert_not_called()
+
+
 def test_failed_import_does_not_report_success(capsys: pytest.CaptureFixture[str]) -> None:
     with (
         patch("yoink.cli.import_browser_session", side_effect=YoinkError("No active X session")),

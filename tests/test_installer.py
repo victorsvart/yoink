@@ -194,7 +194,7 @@ def test_install_reuses_dependencies_and_removes_temporary_helper(installer: Ins
     assert "playwright install" not in calls
     assert "python install" not in calls
     assert "--constraints" in calls and "#sha256=" in calls
-    assert "Reusing the installed Chromium" in result.stdout
+    assert "-m yoink.installation configure --browser" in calls
     assert "Removed temporary downloads and installer-only helpers" in result.stdout
     assert not (installer.directory / "installed/uv").exists()
     assert not (installer.directory / "installed/python").exists()
@@ -222,7 +222,7 @@ def test_missing_python_is_installed_for_runtime(installer: Installer) -> None:
     result = installer.run("y\nn\n", "--without-browser")
     assert result.returncode == 0, result.stdout
     assert "Installing Python 3.13 for Yoink" in result.stdout
-    assert "python install 3.13" in installer.log.read_text()
+    assert "python install --no-bin 3.13" in installer.log.read_text()
 
 
 def test_old_uv_is_left_alone_and_temporary_helper_is_used(installer: Installer) -> None:
@@ -253,8 +253,7 @@ def test_missing_ffmpeg_and_browser_install_only_after_consent(installer: Instal
     result = installer.run("y\nn\n")
     assert result.returncode == 0, result.stdout
     calls = installer.log.read_text()
-    assert "brew\n" in calls
-    assert "-m playwright install chromium" in calls
+    assert "-m yoink.installation configure --ffmpeg --browser" in calls
 
 
 @pytest.mark.parametrize("asset", ["yoink_cli-0.1.0-py3-none-any.whl", "constraints.txt"])
@@ -273,3 +272,25 @@ def test_no_homebrew_gives_ordered_manual_options(installer: Installer) -> None:
     assert result.returncode == 1
     assert result.stdout.index("1. Install Homebrew") < result.stdout.index("2. Install ffmpeg")
     assert not (installer.directory / "installed").exists()
+
+
+def test_uninstall_through_real_terminal(installer: Installer) -> None:
+    code = """import sys
+from pathlib import Path
+from yoink.installation import Receipt, uninstall
+root = Path(sys.argv[1]) / "installed"
+prefix = root / "tools/yoink-cli"
+(prefix / "bin").mkdir(parents=True)
+(prefix / "bin/yoink").touch()
+command = root.parent / "yoink"
+command.symlink_to(prefix / "bin/yoink")
+Receipt(str(root), str(command)).save()
+sys.prefix = str(prefix)
+uninstall(keep_session=True)
+"""
+    installer.harness.write_text(shlex.join([sys.executable, "-c", code, str(installer.directory)]))
+    result = installer.run("y\n")
+    assert result.returncode == 0, result.stdout
+    assert "Yoink uninstalled" in result.stdout
+    assert not (installer.directory / "yoink").is_symlink()
+    assert not (installer.directory / "installed/tools/yoink-cli").exists()

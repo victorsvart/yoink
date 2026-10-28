@@ -11,6 +11,7 @@ from yoink.browser_cookies import CookieBrowser
 from yoink.doctor import check_system
 from yoink.download import Downloader
 from yoink.errors import YoinkError
+from yoink.installation import uninstall, use_private_browser
 from yoink.models import DownloadRequest, Progress, Quality
 from yoink.providers.twitter import parse_post
 
@@ -23,6 +24,7 @@ class Arguments(argparse.Namespace):
     timeout: int
     from_browser: CookieBrowser | None
     profile: str | None
+    keep_session: bool
 
 
 def _timeout(value: str) -> int:
@@ -70,6 +72,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     auth.add_argument("--profile", help="Browser profile name/path for --from-browser")
     commands.add_parser("logout", help="Delete the locally saved session")
+    removal = commands.add_parser(
+        "uninstall", help="Remove Yoink and dependencies added by its installer"
+    )
+    removal.add_argument("--keep-session", action="store_true", help="Keep Yoink's saved X session")
     commands.add_parser("doctor", help="Check Python, downloader, FFmpeg, and browser dependencies")
     return parser
 
@@ -124,6 +130,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--profile requires --from-browser")
     store = SessionStore()
     try:
+        if args.command == "uninstall":
+            uninstall(keep_session=args.keep_session)
+            return 0
+        use_private_browser()
         if args.command == "doctor":
             checks = check_system()
             for check in checks:

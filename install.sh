@@ -54,25 +54,9 @@ verify_asset() {
     [[ "$actual" == "$expected" ]] || fail "Checksum failed for $name. Nothing installed."
 }
 
-install_ffmpeg() {
-    if [[ "$system" == Darwin ]]; then
-        printf '\nInstalling missing FFmpeg with your existing Homebrew...\n'
-        brew install ffmpeg
-    elif [[ $(id -u) == 0 ]]; then
-        apt-get update
-        apt-get install -y ffmpeg
-    else
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg
-    fi
-    if ! have ffmpeg || ! have ffprobe; then
-        fail "FFmpeg installation did not provide ffmpeg and ffprobe."
-    fi
-}
-
 offer_path_setup() {
     case ":$PATH:" in *":$bin_directory:"*) return ;; esac
-    local profile line escaped shell_name="${SHELL:-}"
+    local profile line block escaped shell_name="${SHELL:-}"
     case "${shell_name##*/}" in
         zsh) profile="$HOME/.zshrc" ;;
         bash) profile="$HOME/.bashrc" ;;
@@ -82,7 +66,9 @@ offer_path_setup() {
     line="export PATH=$escaped:\"\$PATH\""
     if confirm "Add $bin_directory to PATH in $profile?"; then
         if [[ ! -f "$profile" ]] || ! grep -Fqx "$line" "$profile"; then
-            printf '\n%s\n' "$line" >>"$profile"
+            block=$(printf '\n# yoink PATH (%s)\n%s\n# end yoink PATH\n' "$data_directory" "$line")
+            printf '%s\n' "$block" >>"$profile"
+            "$python" -m yoink.installation record-path --root "$data_directory" --profile "$profile" --block "$block"
         fi
         printf '\nOpen a new terminal, or run:\n  %s\n' "$line"
     else
@@ -108,6 +94,7 @@ main() {
     have curl || fail "curl is required to download release files."
     printf 'Checking existing dependencies...\n'
     local system temporary data_directory bin_directory needs_ffmpeg=false runtime="" python=""
+    local configure_args=(configure)
     system=$(uname -s)
     case "$system" in Darwin|Linux) ;; *) fail "This installer supports macOS and Linux." ;; esac
     data_directory="${YOINK_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/yoink/install}"
@@ -203,29 +190,33 @@ Rerun this installer after setup. Nothing was installed."
         printf '  - Reuse installed ffmpeg and ffprobe\n'
     fi
     if $browser; then
-        printf '  - Chromium for login, only if the matching browser is missing (large download)\n'
+        printf '  - Reuse Chromium, or install a private copy for Yoink if missing (large download)\n'
         if [[ "$system" == Linux ]]; then
             printf '  - Chromium system libraries through apt (may require sudo)\n'
         fi
     fi
+    printf '  - Ownership receipt so yoink uninstall can remove only what Yoink added\n'
     printf '\nNo passwords or browser cookies are read during installation.\n'
     confirm "Install Yoink and the dependencies listed above?" || fail "Cancelled. Nothing installed."
 
     umask 077
     mkdir -p "$data_directory" "$bin_directory"
+    data_directory=$(cd "$data_directory" && pwd -P)
+    bin_directory=$(cd "$bin_directory" && pwd -P)
     if [[ -z "$runtime" ]]; then
         printf '\nDownloading temporary uv installer helper...\n'
         download "https://astral.sh/uv/$UV_VERSION/install.sh" "$temporary/uv-install.sh"
         UV_UNMANAGED_INSTALL="$temporary/uv" sh "$temporary/uv-install.sh"
         runtime="$temporary/uv/uv"
     fi
-    $needs_ffmpeg && install_ffmpeg
     export UV_TOOL_DIR="$data_directory/tools"
     export UV_TOOL_BIN_DIR="$bin_directory"
     if [[ -z "$python" ]]; then
+        [[ ! -e "$data_directory/python" ]] || fail "An untracked private Python directory already exists. Select its interpreter manually before installing."
+        configure_args+=(--python-owned)
         export UV_PYTHON_INSTALL_DIR="$data_directory/python"
         printf '\nInstalling Python 3.13 for Yoink...\n'
-        "$runtime" --no-config python install 3.13
+        "$runtime" --no-config python install --no-bin 3.13
         python=$("$runtime" --no-config python find --system --no-python-downloads 3.13)
     fi
     printf '\nInstalling Yoink %s and resolving only missing app packages...\n' "$version"
@@ -234,18 +225,10 @@ Rerun this installer after setup. Nothing was installed."
     "$runtime" --no-config tool install --python "$python" \
         --constraints "$temporary/constraints.txt" "$base/$wheel#sha256=$wheel_hash"
     python="$UV_TOOL_DIR/yoink-cli/bin/python"
-    if $browser; then
-        if "$python" -c 'from pathlib import Path; from playwright.sync_api import sync_playwright; p = sync_playwright().start(); installed = Path(p.chromium.executable_path).is_file(); p.stop(); raise SystemExit(0 if installed else 1)'; then
-            printf '\nReusing the installed Chromium browser.\n'
-        else
-            printf '\nInstalling missing Chromium and its runtime dependencies...\n'
-            if [[ "$system" == Linux ]]; then
-                "$python" -m playwright install --with-deps chromium
-            else
-                "$python" -m playwright install chromium
-            fi
-        fi
-    fi
+    $needs_ffmpeg && configure_args+=(--ffmpeg)
+    $browser && configure_args+=(--browser)
+    "$python" -m yoink.installation "${configure_args[@]}" --root "$data_directory" \
+        --command "$bin_directory/yoink"
     "$bin_directory/yoink" --version
     printf '\nInstalled. Try:\n  %s --help\n' "$bin_directory/yoink"
     offer_path_setup

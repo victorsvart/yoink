@@ -35,7 +35,23 @@ uses apt on Debian/Ubuntu. To skip Chromium when using an existing browser sessi
 curl -fsSL https://github.com/victorsvart/yoink/releases/latest/download/install.sh | bash -s -- --without-browser
 ```
 
-Rerun the installer to update Yoink. For a specific release, add `--version 0.1.0`.
+Rerun the installer to update Yoink. For a specific release, add `--version 0.1.1`.
+
+## Uninstall
+
+```bash
+yoink uninstall
+```
+
+Shows what will be removed and asks for confirmation. Removes Yoink, its private
+Python and Chromium downloads, the saved X session, and the PATH entry added by
+the installer. Use `yoink uninstall --keep-session` to keep the saved login.
+Downloaded videos stay where they are.
+
+Only system packages recorded as newly installed by Yoink are eligible for removal.
+Pre-existing tools, changed packages, and dependencies needed by other installed
+software are kept. Installations made before ownership tracking was added keep
+older dependencies whose ownership is unknown; rerun the current installer first.
 
 ## Download
 

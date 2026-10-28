@@ -55,8 +55,10 @@ jobs:
         run: |
           uv export --locked --no-dev --no-emit-project --no-hashes \
             --output-file "$RUNNER_TEMP/yoink-constraints.txt"
-          UV_TOOL_DIR="$RUNNER_TEMP/yoink-tools" UV_TOOL_BIN_DIR="$RUNNER_TEMP/yoink-bin" \
+          UV_TOOL_DIR="$RUNNER_TEMP/yoink-install/tools" UV_TOOL_BIN_DIR="$RUNNER_TEMP/yoink-bin" \
             uv tool install --python 3.13 --constraints "$RUNNER_TEMP/yoink-constraints.txt" dist/*.whl
           cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/yoink-install/tools/yoink-cli/bin/python" -m yoink.installation configure \
+            --root "$RUNNER_TEMP/yoink-install" --command "$RUNNER_TEMP/yoink-bin/yoink" --browser
           "$RUNNER_TEMP/yoink-bin/yoink" --version
           "$RUNNER_TEMP/yoink-bin/yoink" doctor

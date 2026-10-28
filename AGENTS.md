@@ -49,6 +49,9 @@ as proven working features.
 - The Bash installer must ask through the terminal before installing dependencies,
   reuse compatible existing tools, and remove any temporary installer-only helper.
   Keep required runtime dependencies and leave pre-existing software alone.
+- Record dependency ownership across installer updates. `yoink uninstall` must ask
+  for terminal confirmation, remove only recorded additions, preserve pre-existing
+  or subsequently changed/shared packages, and never remove downloaded videos.
 - Keep both mypy and Pyright strict. Validate untyped subprocess data at runtime;
   do not hide typing failures with blanket ignores or untyped application APIs.
 - Integration tests use real local media downloads/merges and Chromium, but substitute
