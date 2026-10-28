@@ -26,8 +26,22 @@ class Installer:
     log: Path
     harness: Path
 
-    def run(self, answers: str | None, *arguments: str) -> subprocess.CompletedProcess[str]:
+    def run(
+        self,
+        answers: str | None,
+        *arguments: str,
+        piped: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
         command = ["/bin/bash", str(self.harness), *arguments]
+        if piped:
+            command = [
+                "/bin/bash",
+                "-c",
+                'cat "$1" | /bin/bash -s -- "${@:2}"' if arguments else 'cat "$1" | /bin/bash',
+                "--",
+                str(INSTALLER),
+                *arguments,
+            ]
         if answers is None:
             return subprocess.run(
                 command,
@@ -110,6 +124,8 @@ def installer(tmp_path: Path) -> Installer:
         }
     )
     (tmp_path / "ffmpeg-ready").touch()
+    for tool in ("ffmpeg", "ffprobe"):
+        executable(binary / tool, "#!/bin/sh\nexit 0\n")
     (binary / "python3").symlink_to(sys.executable)
     executable(binary / "uname", '#!/bin/sh\nprintf "%s\\n" "$MOCK_SYSTEM"\n')
     executable(
@@ -177,6 +193,56 @@ def test_decline_installs_nothing(installer: Installer) -> None:
     assert not (installer.directory / "installed").exists()
     assert "astral.sh" not in installer.log.read_text()
     assert "brew\n" not in installer.log.read_text()
+
+
+@pytest.mark.parametrize("piped", [False, True])
+def test_installer_help_from_file_or_stdin(piped: bool) -> None:
+    command = (
+        ["/bin/bash", "-s", "--", "--help"] if piped else ["/bin/bash", str(INSTALLER), "--help"]
+    )
+    result = subprocess.run(
+        command,
+        input=INSTALLER.read_text() if piped else None,
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Usage: bash install.sh" in result.stdout
+    assert "unbound variable" not in result.stderr
+
+
+def test_sourcing_installer_does_not_run_main() -> None:
+    result = subprocess.run(
+        ["/bin/bash", "-c", 'source "$1" --help; printf sourced', "--", str(INSTALLER)],
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "sourced"
+
+
+def test_piped_installer_completes_after_terminal_consent(installer: Installer) -> None:
+    result = installer.run("y\nn\n", piped=True)
+    assert result.returncode == 0, result.stdout
+    assert (installer.directory / "commands/yoink").is_file()
+    assert "unbound variable" not in result.stdout
+    assert "Removed temporary downloads and installer-only helpers" in result.stdout
+
+
+def test_piped_installer_decline_installs_nothing(installer: Installer) -> None:
+    result = installer.run("n\n", piped=True)
+    assert result.returncode == 1, result.stdout
+    assert "Cancelled. Nothing installed" in result.stdout
+    assert not (installer.directory / "installed").exists()
+
+
+def test_piped_installer_still_requires_terminal_consent(installer: Installer) -> None:
+    result = installer.run(None, piped=True)
+    assert result.returncode == 1, result.stdout
+    assert "Cancelled. Nothing installed" in result.stderr
+    assert not (installer.directory / "installed").exists()
 
 
 def test_piped_yes_is_not_terminal_consent(installer: Installer) -> None:

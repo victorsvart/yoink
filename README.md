@@ -35,7 +35,7 @@ uses apt on Debian/Ubuntu. To skip Chromium when using an existing browser sessi
 curl -fsSL https://github.com/victorsvart/yoink/releases/latest/download/install.sh | bash -s -- --without-browser
 ```
 
-For a specific release, add `--version 0.1.3`.
+For a specific release, add `--version 0.1.4`.
 
 ## Update
 
@@ -86,7 +86,7 @@ yoink 'https://x.com/USER/status/ID'
 yoink download 'https://x.com/USER/status/ID' --quality 720p --output ./videos
 ```
 
-Downloads all videos in the post. Files go into the current directory unless you
+Downloads all videos in the post. Files go into `~/Downloads` unless you
 set `--output`. Existing files are reused; completed files are kept if another
 video fails.
 

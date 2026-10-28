@@ -237,6 +237,7 @@ Rerun this installer after setup. Nothing was installed."
     printf '\nRemoved temporary downloads and installer-only helpers.\n'
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+# no source filename when curl feeds bash through stdin
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
     main "$@"
 fi

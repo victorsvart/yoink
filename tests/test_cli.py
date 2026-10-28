@@ -30,6 +30,16 @@ def test_download_failure_never_reports_success(capsys: pytest.CaptureFixture[st
     assert "Complete:" not in output.out
 
 
+def test_download_defaults_to_user_downloads_directory(tmp_path: Path) -> None:
+    with (
+        patch("yoink.cli.Path.home", return_value=tmp_path),
+        patch("yoink.cli.Downloader.download", return_value=DownloadResult(())) as download,
+    ):
+        assert main(["https://x.com/NASA/status/123"]) == 0
+    request = download.call_args.args[0]
+    assert request.output == tmp_path / "Downloads"
+
+
 def test_invalid_url_does_not_run_downloader(capsys: pytest.CaptureFixture[str]) -> None:
     with patch("yoink.cli.Downloader.download") as download:
         assert main(["download", "https://evil.test/"]) == 1

@@ -46,6 +46,8 @@ as proven working features.
 - Release tags use `vX.Y.Z` and must match both `pyproject.toml` and `yoink.__version__`.
   `uv run python scripts/build_release.py vX.Y.Z` prepares wheels, locked constraints,
   the installer, and SHA-256 checksums. GitHub Actions tests macOS/Linux before publishing.
+- Test the installer as a saved file, a sourced file, and piped into Bash stdin.
+  Cover consent through a real terminal for the piped entry point.
 - The Bash installer must ask through the terminal before installing dependencies,
   reuse compatible existing tools, and remove any temporary installer-only helper.
   Keep required runtime dependencies and leave pre-existing software alone.

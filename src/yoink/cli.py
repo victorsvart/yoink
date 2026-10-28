@@ -59,7 +59,13 @@ def _parser() -> argparse.ArgumentParser:
         default=Quality.BEST,
         help="Maximum video height, or best/worst (default: best)",
     )
-    download.add_argument("--output", "-o", type=Path, default=Path("."), help="Output directory")
+    download.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        default=Path.home() / "Downloads",
+        help="Output directory (default: ~/Downloads)",
+    )
     auth = commands.add_parser(
         "login", help="Sign in through a browser and save the session locally"
     )
