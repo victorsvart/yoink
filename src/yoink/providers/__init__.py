@@ -1,1 +1,1 @@
-"""I keep provider rules here. X is enough of a headache for the first release."""
+"""provider rules live here. X is already enough work."""

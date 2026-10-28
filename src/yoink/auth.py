@@ -1,4 +1,4 @@
-"""I let the browser handle login and keep session cookies out of Git."""
+"""browser login and private cookies. none of this belongs in git."""
 
 import os
 import re
@@ -167,7 +167,7 @@ def import_browser_session(
     *,
     profile: str | None = None,
 ) -> None:
-    """I reuse X cookies without another login or a dump of every site's session."""
+    """reusing the X session without another login or a dump of every site's cookies."""
     jar = read_browser_cookies(browser, profile)
     cookies = tuple(
         SessionCookie(
@@ -196,7 +196,7 @@ def import_browser_session(
 def wait_for_login(page: Page, *, timeout: int) -> None:
     home = page.get_by_test_id("AppTabBar_Home_Link")
     limited = page.get_by_text(_LOGIN_LIMIT)
-    # I ignore hidden elements. A stale login widget doesn't get to fake the outcome.
+    # ignoring hidden widgets so stale UI can't pretend the login worked
     visible_outcome = home.or_(limited).and_(page.locator(":visible"))
     visible_outcome.first.wait_for(state="visible", timeout=timeout * 1000)
     if home.is_visible():
@@ -210,7 +210,7 @@ def wait_for_login(page: Page, *, timeout: int) -> None:
 
 
 def login(store: SessionStore, *, timeout: int = 300) -> None:
-    """I wait for manual login and 2FA. Password fields are none of my business."""
+    """waiting for login and 2FA. passwords stay in the browser."""
     try:
         previous = store.load()
     except YoinkError:

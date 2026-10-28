@@ -1,4 +1,4 @@
-"""I check the tools before a missing binary wastes my afternoon."""
+"""checking dependencies before finding out halfway through a download."""
 
 import shutil
 import sys

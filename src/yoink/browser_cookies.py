@@ -1,4 +1,4 @@
-"""I read the chosen browser's cookies and keep yt-dlp's untyped bits here."""
+"""reading the selected browser's cookies, with yt-dlp's untyped stuff kept here."""
 
 from collections.abc import Callable
 from enum import StrEnum
@@ -22,7 +22,7 @@ class CookieBrowser(StrEnum):
 
 
 class _QuietLogger:
-    """I drop upstream logs. Leaking browser details would be a stupid feature."""
+    """dropping upstream logs because private browser details aren't debug output."""
 
     def debug(self, message: object, *args: object, **kwargs: object) -> None:
         pass
@@ -33,8 +33,8 @@ class _QuietLogger:
 
 
 def read_browser_cookies(browser: CookieBrowser, profile: str | None) -> CookieJar:
-    # yt-dlp gives me no types here. Lovely. I narrow the callable and check its
-    # result before letting it anywhere near the rest of my code.
+    # no types from yt-dlp here, so narrowing the callable and checking the
+    # result before trusting it. the cast alone doesn't prove a damn thing
     try:
         extractor = cast(
             Callable[[str, str | None, _QuietLogger], object],

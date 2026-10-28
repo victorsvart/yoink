@@ -16,7 +16,7 @@ _POST_PATH = re.compile(
 
 
 def parse_post(url: str) -> Post:
-    """I accept post links and strip the tracking junk and media index."""
+    """post links only, minus tracking junk and media indices."""
     try:
         parsed = urlsplit(url)
         valid = (
@@ -37,5 +37,5 @@ def parse_post(url: str) -> Post:
             "Use an individual X post URL; profiles, searches and Spaces aren't supported."
         )
     post_id = match.group(1)
-    # I still download the whole post when a link ends in /video/2. All means all.
+    # /video/2 still means the whole post. copying a link shouldn't drop the other videos
     return Post(url=f"https://x.com/i/web/status/{post_id}", id=post_id)

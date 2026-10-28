@@ -1,6 +1,6 @@
-"""I use real HTTP downloads, FFmpeg, and Chromium here.
+"""real HTTP downloads, FFmpeg merges and Chromium.
 
-I fake Twitter metadata. I'm not signing into X every time I run a test.
+Twitter metadata is fake. no need to drag X into every test run.
 """
 
 import json

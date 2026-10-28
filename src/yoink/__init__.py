@@ -1,3 +1,3 @@
-"""I grab videos from links. That's the job."""
+"""grab a video, keep moving."""
 
 __version__ = "0.1.0"

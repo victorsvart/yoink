@@ -1,4 +1,4 @@
-"""I validate subprocess JSON. Valid syntax isn't a trustworthy schema."""
+"""checking subprocess JSON because parsing it doesn't make the shape trustworthy."""
 
 import json
 from collections.abc import Mapping

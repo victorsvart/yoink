@@ -1,4 +1,4 @@
-"""I wrap yt-dlp with types and keep its raw diagnostics off the terminal."""
+"""wrapping yt-dlp without dumping its raw diagnostics into the terminal."""
 
 import json
 import os
@@ -129,7 +129,7 @@ class Downloader:
         cookies = self.store.load()
         output = request.output.expanduser().resolve()
         output.mkdir(parents=True, exist_ok=True)
-        # I keep signed URLs and cookie copies in a private temp directory. No souvenirs.
+        # signed URLs and cookie copies stay in a private temp directory, then get deleted
         with tempfile.TemporaryDirectory(prefix="yoink-") as temporary:
             directory = Path(temporary)
             cookie_args: list[str] = []
@@ -206,7 +206,7 @@ class Downloader:
                             if on_progress:
                                 on_progress(parse_progress(line.removeprefix(_PROGRESS_PREFIX)))
                         else:
-                            # I bound the diagnostic buffer and keep its secrets off the terminal.
+                            # keeping a small buffer in memory. still not printing its secrets
                             diagnostics.append(line[-4096:])
                             diagnostics = diagnostics[-20:]
                     returncode = process.wait()

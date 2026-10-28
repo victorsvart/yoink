@@ -1,4 +1,4 @@
-"""I parse commands and print results here. Extraction has its own mess."""
+"""commands and output here. extraction can deal with its own problems."""
 
 import argparse
 import sys

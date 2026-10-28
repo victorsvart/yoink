@@ -1,12 +1,12 @@
-"""I turn backend failures into useful errors without spilling secrets."""
+"""backend failures, minus the credential leaks."""
 
 
 class YoinkError(Exception):
-    """I can print this error without spilling credentials."""
+    """errors that can actually be printed without exposing credentials."""
 
 
 def extraction_error(diagnostic: str, *, authenticated: bool) -> YoinkError:
-    """I classify failures without parroting private diagnostics or media URLs."""
+    """classifying failures because raw backend errors can leak session details."""
     # Best effort, definitely not ideal: matching human-readable diagnostics is
     # brittle and can misclassify errors when upstream wording changes or overlaps.
     # Prefer structured error codes if yt-dlp exposes them through this interface.
