@@ -3,9 +3,10 @@
 ## Purpose and current state
 
 Build a local CLI for downloading videos from links, starting with Twitter/X.
-Read README.md for the intended scope and architecture. This is a planning-only
-repository: no implementation, packaging, dependencies, or tests exist yet.
-Do not describe planned commands as working features.
+Read README.md for the scope, architecture, and verification limits. The initial
+typed Python CLI is implemented with uv packaging, yt-dlp, Playwright, and tests.
+Do not describe unverified authenticated downloads or a browser extraction fallback
+as proven working features.
 
 ## Product direction
 
@@ -36,7 +37,16 @@ Do not describe planned commands as working features.
 
 - Prefer a small Python package with a CLI entry point named yoink.
 - Keep CLI parsing, authentication, and provider/download logic separate.
-- Add development/install/test commands here when the toolchain exists.
+- Use Python 3.13+ with the project runtime pinned in `.python-version`.
+- Setup: `uv sync --locked`, `uv run playwright install chromium`, and
+  `uv run yoink doctor`. FFmpeg/ffprobe must also be installed on PATH.
+- Verify: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`,
+  `uv run pyright`, `uv run pytest`, and `uv build`.
+- Keep both mypy and Pyright strict. Validate untyped subprocess data at runtime;
+  do not hide typing failures with blanket ignores or untyped application APIs.
+- Integration tests use real local media downloads/merges and Chromium, but substitute
+  Twitter metadata. Real account login and authenticated downloads need separate live
+  verification; never use real credentials in automated tests.
 - Test URL validation, authentication/session handling, quality selection,
   multi-video posts, and failure reporting as those features are introduced.
 - Distinguish mocked tests from live download verification in progress reports.
