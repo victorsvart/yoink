@@ -36,11 +36,11 @@ class HTTPSRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def download(url: str, *, limit: int = 1024 * 1024) -> bytes:
+def download(url: str, *, limit: int = 1024 * 1024, timeout: float = 30) -> bytes:
     try:
         opener = urllib.request.build_opener(HTTPSRedirect())
         request = urllib.request.Request(url, headers={"User-Agent": f"yoink/{__version__}"})
-        with opener.open(request, timeout=30) as response:
+        with opener.open(request, timeout=timeout) as response:
             data: bytes = response.read(limit + 1)
         if len(data) > limit:
             raise YoinkError("The release file was larger than expected. Update stopped.")
@@ -97,6 +97,9 @@ def update(*, check_only: bool = False, repair: bool = False) -> None:
         raise YoinkError("The yoink launcher has changed. Update stopped to preserve it.")
     print("Checking for a newer Yoink release...", flush=True)
     latest = release_version(download(f"{RELEASES_URL}/latest/download/VERSION", limit=64))
+    from yoink.update_notice import record_latest
+
+    record_latest(Path(receipt.root), latest)
     current = tuple(int(part) for part in __version__.split("."))
     available = tuple(int(part) for part in latest.split("."))
     if available < current or (available == current and not repair):

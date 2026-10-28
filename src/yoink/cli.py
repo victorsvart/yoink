@@ -15,6 +15,7 @@ from yoink.installation import uninstall, use_private_browser
 from yoink.models import DownloadRequest, Progress, Quality
 from yoink.providers.twitter import parse_post
 from yoink.update import update
+from yoink.update_notice import UpdateNotice
 
 
 class Arguments(argparse.Namespace):
@@ -140,6 +141,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "login" and args.profile is not None and args.from_browser is None:
         parser.error("--profile requires --from-browser")
     store = SessionStore()
+    notice = UpdateNotice.start() if args.command not in ("update", "uninstall") else None
     try:
         if args.command == "uninstall":
             uninstall(keep_session=args.keep_session)
@@ -196,3 +198,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("\nyoink: Cancelled.", file=sys.stderr)
         return 130
+    finally:
+        if notice is not None:
+            notice.show()

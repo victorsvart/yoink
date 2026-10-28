@@ -323,6 +323,8 @@ def managed_installation() -> Receipt:
 
 
 def uninstall(*, keep_session: bool = False) -> None:
+    from yoink.update_notice import clear_cache
+
     receipt = managed_installation()
     root = Path(receipt.root)
     prefix = root / "tools" / "yoink-cli"
@@ -382,6 +384,7 @@ def uninstall(*, keep_session: bool = False) -> None:
             shutil.rmtree(path)
     print(f"Removing {prefix}...", flush=True)
     shutil.rmtree(prefix)
+    clear_cache(root)
     (root / _RECEIPT).unlink()
     print("Yoink uninstalled. Pre-existing software and downloaded videos were kept.")
 

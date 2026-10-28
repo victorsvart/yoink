@@ -55,6 +55,9 @@ as proven working features.
 - `yoink update` must verify the release installer before executing it, preserve
   the existing install paths and dependency ownership receipt, and retain browser
   opt-outs. Keep update and install dependency handling in the same installer.
+- Automatic update notices must use a cached background check, preserve command
+  output and exit status, stay quiet when offline/noninteractive, and respect
+  `YOINK_NO_UPDATE_CHECK=1`. Explicit updates must bypass the notification cache.
 - Keep both mypy and Pyright strict. Validate untyped subprocess data at runtime;
   do not hide typing failures with blanket ignores or untyped application APIs.
 - Integration tests use real local media downloads/merges and Chromium, but substitute

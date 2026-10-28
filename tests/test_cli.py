@@ -95,11 +95,44 @@ def test_update_check_dispatches_without_login_or_download() -> None:
         patch("yoink.cli.update") as refresh,
         patch("yoink.cli.Downloader.download") as download,
         patch("yoink.cli.login") as login,
+        patch("yoink.cli.UpdateNotice.start") as notice,
     ):
         assert main(["update", "--check"]) == 0
     refresh.assert_called_once_with(check_only=True, repair=False)
     download.assert_not_called()
     login.assert_not_called()
+    notice.assert_not_called()
+
+
+def test_notice_does_not_change_failure_status_or_stdout(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with (
+        patch("yoink.cli.UpdateNotice.start") as notice,
+        patch("yoink.cli.Downloader.download", side_effect=YoinkError("download failed")),
+    ):
+        assert main(["https://x.com/a/status/1"]) == 1
+    notice.return_value.show.assert_called_once()
+    assert capsys.readouterr().out == ""
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [["--help"], ["--version"], ["update", "--check"], ["uninstall", "--keep-session"]],
+)
+def test_metadata_update_and_uninstall_never_spawn_notice(arguments: list[str]) -> None:
+    with (
+        patch("yoink.cli.UpdateNotice.start") as notice,
+        patch("yoink.cli.update"),
+        patch("yoink.cli.uninstall"),
+    ):
+        if arguments[0].startswith("--"):
+            with pytest.raises(SystemExit) as result:
+                main(arguments)
+            assert result.value.code == 0
+        else:
+            assert main(arguments) == 0
+    notice.assert_not_called()
 
 
 def test_failed_import_does_not_report_success(capsys: pytest.CaptureFixture[str]) -> None:

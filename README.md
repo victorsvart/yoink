@@ -35,7 +35,7 @@ uses apt on Debian/Ubuntu. To skip Chromium when using an existing browser sessi
 curl -fsSL https://github.com/victorsvart/yoink/releases/latest/download/install.sh | bash -s -- --without-browser
 ```
 
-For a specific release, add `--version 0.1.2`.
+For a specific release, add `--version 0.1.3`.
 
 ## Update
 
@@ -53,6 +53,12 @@ To check without changing anything:
 ```bash
 yoink update --check
 ```
+
+Interactive commands show a notice when a newer version is known. Release checks
+run in the background at most once every 24 hours, so commands don't wait for
+GitHub. Offline failures stay quiet. Notices go to stderr; noninteractive commands skip
+the automatic check. Set `YOINK_NO_UPDATE_CHECK=1` to disable automatic checks.
+`yoink update` always checks immediately, regardless of the cache.
 
 If dependency setup was interrupted, use `yoink update --repair` to retry it.
 Versions before 0.1.2 need one more installer run to get these commands.
