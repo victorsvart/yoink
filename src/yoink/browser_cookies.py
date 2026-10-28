@@ -42,6 +42,13 @@ def read_browser_cookies(browser: CookieBrowser, profile: str | None) -> CookieJ
         )
         result = extractor(browser.value, profile, _QuietLogger())
     except Exception:
+        if browser is CookieBrowser.SAFARI:
+            raise YoinkError(
+                "Could not read Safari's cookies. Check the selected profile and OS access "
+                "permissions. If access is blocked, open System Settings > Privacy & Security > "
+                "Full Disk Access and allow the terminal/app running Yoink, then quit and reopen "
+                "that app before retrying. Yoink cannot grant this permission itself."
+            ) from None
         raise YoinkError(
             "Could not read the selected browser's cookies. Check the browser/profile and "
             "OS access permissions. On macOS, cookie access may require Keychain or "

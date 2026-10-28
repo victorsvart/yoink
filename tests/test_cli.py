@@ -59,11 +59,16 @@ def test_interrupt_exit_status(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_browser_import_does_not_launch_login(capsys: pytest.CaptureFixture[str]) -> None:
-    with patch("yoink.cli.import_browser_session") as imported, patch("yoink.cli.login") as login:
+    with (
+        patch("yoink.cli.import_browser_session") as imported,
+        patch("yoink.cli.login") as login,
+        patch("builtins.input") as consent,
+    ):
         assert main(["login", "--from-browser", "chrome", "--profile", "Profile 1"]) == 0
     assert imported.call_args.args[1] is CookieBrowser.CHROME
     assert imported.call_args.kwargs["profile"] == "Profile 1"
     login.assert_not_called()
+    consent.assert_not_called()
     assert "saved privately" in capsys.readouterr().out
 
 
@@ -74,6 +79,64 @@ def test_profile_requires_browser() -> None:
 
 
 def test_failed_import_does_not_report_success(capsys: pytest.CaptureFixture[str]) -> None:
-    with patch("yoink.cli.import_browser_session", side_effect=YoinkError("No active X session")):
+    with (
+        patch("yoink.cli.import_browser_session", side_effect=YoinkError("No active X session")),
+        patch("builtins.input", return_value=""),
+    ):
         assert main(["login", "--from-browser", "safari"]) == 1
     assert "saved privately" not in capsys.readouterr().out
+
+
+def test_safari_waits_for_enter_before_reading_cookies(capsys: pytest.CaptureFixture[str]) -> None:
+    with (
+        patch("yoink.cli.import_browser_session") as imported,
+        patch("yoink.cli.login") as login,
+    ):
+
+        def agree(prompt: str) -> str:
+            imported.assert_not_called()
+            assert "Press Enter" in prompt
+            notice = capsys.readouterr().err
+            assert "request access" in notice
+            assert "Full Disk Access" in notice
+            assert "Only X/Twitter cookies" in notice
+            return ""
+
+        with patch("builtins.input", side_effect=agree):
+            assert main(["login", "--from-browser", "safari"]) == 0
+    imported.assert_called_once()
+    assert imported.call_args.args[1] is CookieBrowser.SAFARI
+    login.assert_not_called()
+
+
+@pytest.mark.parametrize("response", ["no", "cancel", "yes"])
+def test_safari_requires_enter_to_continue(
+    response: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with (
+        patch("yoink.cli.import_browser_session") as imported,
+        patch("builtins.input", return_value=response),
+    ):
+        assert main(["login", "--from-browser", "safari"]) == 1
+    imported.assert_not_called()
+    output = capsys.readouterr()
+    assert "No cookies were read" in output.err
+    assert "saved privately" not in output.out
+
+
+@pytest.mark.parametrize("interruption, code", [(EOFError, 1), (KeyboardInterrupt, 130)])
+def test_safari_interrupted_consent_does_not_read_cookies(
+    interruption: type[BaseException],
+    code: int,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with (
+        patch("yoink.cli.import_browser_session") as imported,
+        patch("builtins.input", side_effect=interruption),
+    ):
+        assert main(["login", "--from-browser", "safari"]) == code
+    imported.assert_not_called()
+    output = capsys.readouterr()
+    assert "Reading the selected browser" not in output.out
+    assert "saved privately" not in output.out

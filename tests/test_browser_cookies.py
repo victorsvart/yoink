@@ -61,7 +61,16 @@ def test_browser_permission_failure_is_redacted() -> None:
     with patch("yoink.browser_cookies.import_module") as module:
         module.return_value.extract_cookies_from_browser.side_effect = PermissionError("SECRET")
         with pytest.raises(YoinkError, match="OS access permissions") as error:
+            read_browser_cookies(CookieBrowser.CHROME, None)
+    assert "SECRET" not in str(error.value)
+
+
+def test_safari_permission_failure_explains_manual_access() -> None:
+    with patch("yoink.browser_cookies.import_module") as module:
+        module.return_value.extract_cookies_from_browser.side_effect = PermissionError("SECRET")
+        with pytest.raises(YoinkError, match="Full Disk Access") as error:
             read_browser_cookies(CookieBrowser.SAFARI, None)
+    assert "cannot grant this permission itself" in str(error.value)
     assert "SECRET" not in str(error.value)
 
 

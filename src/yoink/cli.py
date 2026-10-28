@@ -82,6 +82,29 @@ def _show_progress(progress: Progress) -> None:
     print(message, file=sys.stderr, flush=True)
 
 
+def _confirm_safari_access() -> None:
+    print(
+        "Safari's cookies are protected by macOS privacy permissions.\n"
+        "After you continue, Yoink will request access to read Safari's cookie database.\n"
+        "Allow access if macOS asks. If no prompt appears and access is blocked, open\n"
+        "System Settings > Privacy & Security > Full Disk Access and allow the terminal/app\n"
+        "running Yoink (for example, Terminal or iTerm). You may need to quit and reopen it.\n"
+        "Only X/Twitter cookies will be saved in Yoink's private session store.",
+        file=sys.stderr,
+        flush=True,
+    )
+    try:
+        answer = input("Press Enter to proceed, or Ctrl+C to cancel: ")
+    except EOFError:
+        raise YoinkError(
+            "Safari access was not confirmed. Run in an interactive terminal and press Enter "
+            "to proceed. No cookies were read."
+        ) from None
+
+    if answer:
+        raise YoinkError("Safari access cancelled. No cookies were read.")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     values = list(argv if argv is not None else sys.argv[1:])
     if values and values[0].startswith(("https://", "http://")):
@@ -101,6 +124,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0 if all(check.ready for check in checks) else 1
         if args.command == "login":
             if args.from_browser is not None:
+                if args.from_browser is CookieBrowser.SAFARI:
+                    _confirm_safari_access()
                 print("Reading the selected browser's session. Only X cookies will be saved.")
                 import_browser_session(store, args.from_browser, profile=args.profile)
             else:
@@ -137,5 +162,5 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     except KeyboardInterrupt:
-        print("\nyoink: Cancelled. The download is not confirmed complete.", file=sys.stderr)
+        print("\nyoink: Cancelled.", file=sys.stderr)
         return 130

@@ -90,6 +90,13 @@ not submit a login, modify the source browser, or export a cookie file for other
 OS access controls still apply; macOS may require Keychain or Privacy & Security
 permission for the terminal/app running Yoink. Yoink does not change those settings.
 
+For Safari, the CLI explains the permissions first and waits for **Enter** before
+reading cookies. Ctrl+C, EOF, or any nonempty answer cancels without reading them.
+macOS may show an access dialog when the read starts. If access is still blocked,
+allow the terminal/app running Yoink under **System Settings > Privacy & Security >
+Full Disk Access**, then quit and reopen that app before retrying. Pressing Enter
+confirms the cookie read; it does not grant macOS permissions automatically.
+
 If X displays “We've temporarily limited your login,” Yoink stops with an actionable
 error instead of waiting for a generic timeout. The same message may appear in a
 garbled onboarding response. This does not identify the reason for the restriction.
