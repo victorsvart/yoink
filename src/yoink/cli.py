@@ -27,6 +27,7 @@ def _timeout(value: str) -> int:
         seconds = int(value)
     except ValueError:
         raise argparse.ArgumentTypeError("Timeout must be an integer number of seconds.") from None
+
     if not 1 <= seconds <= 3600:
         raise argparse.ArgumentTypeError("Timeout must be between 1 and 3600 seconds.")
     return seconds

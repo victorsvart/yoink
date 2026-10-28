@@ -7,6 +7,9 @@ class YoinkError(Exception):
 
 def extraction_error(diagnostic: str, *, authenticated: bool) -> YoinkError:
     """Classify upstream output without ever echoing it or its media URLs."""
+    # Best effort, definitely not ideal: matching human-readable diagnostics is
+    # brittle and can misclassify errors when upstream wording changes or overlaps.
+    # Prefer structured error codes if yt-dlp exposes them through this interface.
     text = diagnostic.lower()
     if any(word in text for word in ("requested format", "no video formats")):
         return YoinkError("No video matches this quality. Try --quality best or a higher limit.")

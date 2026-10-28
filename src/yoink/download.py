@@ -40,15 +40,22 @@ _PROGRESS_PREFIX = "YOINK_PROGRESS:"
 
 def count_videos(metadata: Mapping[str, object]) -> int:
     entries = metadata.get("entries")
-    if entries is not None:
-        videos = object_list(entries)
-        if not videos:
-            raise YoinkError("This post does not contain a downloadable video.")
-        return sum(count_videos(object_data(entry)) for entry in videos)
+    if entries is None:
+        return _count_single_video(metadata)
+
+    videos = object_list(entries)
+    if not videos:
+        raise YoinkError("This post does not contain a downloadable video.")
+
+    return sum(count_videos(object_data(entry)) for entry in videos)
+
+
+def _count_single_video(metadata: Mapping[str, object]) -> int:
     if not metadata.get("formats") or not isinstance(metadata.get("id"), str):
         raise YoinkError("This post does not contain a downloadable video.")
     if metadata.get("is_live") is True:
         raise YoinkError("Live videos are not supported. Retry when the broadcast has ended.")
+
     return 1
 
 
