@@ -22,11 +22,13 @@ def check_system() -> tuple[Check, ...]:
         try:
             checks.append(Check(package, True, version(package)))
         except PackageNotFoundError:
-            checks.append(Check(package, False, "Run 'uv sync'."))
+            checks.append(Check(package, False, "Reinstall Yoink using the installer."))
     for tool in ("ffmpeg", "ffprobe"):
         executable = shutil.which(tool)
         checks.append(
-            Check(tool, executable is not None, executable or "Run 'brew install ffmpeg'.")
+            Check(
+                tool, executable is not None, executable or "Install FFmpeg or rerun the installer."
+            )
         )
     with sync_playwright() as playwright:
         installed = Path(playwright.chromium.executable_path).is_file()
@@ -34,7 +36,7 @@ def check_system() -> tuple[Check, ...]:
         Check(
             "Chromium",
             installed,
-            "Installed" if installed else "Run 'uv run playwright install chromium'.",
+            "Installed" if installed else "Rerun the installer to install Chromium.",
         )
     )
     return tuple(checks)

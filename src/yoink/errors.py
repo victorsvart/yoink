@@ -47,5 +47,5 @@ def extraction_error(diagnostic: str, *, authenticated: bool) -> YoinkError:
         return YoinkError("Could not reach X or its media server. Check your connection and retry.")
     return YoinkError(
         "Extraction or download failed. Check the link and your access, then retry. "
-        "If X changed, update yt-dlp with 'uv lock --upgrade-package yt-dlp && uv sync'."
+        "If X changed, update Yoink by rerunning the installer."
     )

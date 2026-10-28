@@ -124,7 +124,7 @@ class Downloader:
         for tool in ("ffmpeg", "ffprobe"):
             if shutil.which(tool) is None:
                 raise YoinkError(
-                    "FFmpeg and ffprobe are required. Install them with 'brew install ffmpeg'."
+                    "FFmpeg and ffprobe are required. Install FFmpeg or rerun the installer."
                 )
         cookies = self.store.load()
         output = request.output.expanduser().resolve()

@@ -250,6 +250,6 @@ def login(store: SessionStore, *, timeout: int = 300) -> None:
         ) from None
     except PlaywrightError:
         raise YoinkError(
-            "Browser login did not complete. Run 'uv run playwright install chromium' if needed, "
+            "Browser login did not complete. Rerun the installer if Chromium is missing, "
             "then retry 'yoink login' and finish login/2FA before the timeout."
         ) from None

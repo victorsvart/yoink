@@ -3,7 +3,7 @@
 ## Purpose and current state
 
 Build a local CLI for downloading videos from links, starting with Twitter/X.
-Read README.md for the scope, architecture, and verification limits. The initial
+Read README.md for setup, supported scope, and user-facing limitations. The initial
 typed Python CLI is implemented with uv packaging, yt-dlp, Playwright, and tests.
 Do not describe unverified authenticated downloads or a browser extraction fallback
 as proven working features.
@@ -42,6 +42,13 @@ as proven working features.
   `uv run yoink doctor`. FFmpeg/ffprobe must also be installed on PATH.
 - Verify: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`,
   `uv run pyright`, `uv run pytest`, and `uv build`.
+- Installer/workflow checks: `bash -n install.sh`, `shellcheck install.sh`, and `actionlint`.
+- Release tags use `vX.Y.Z` and must match both `pyproject.toml` and `yoink.__version__`.
+  `uv run python scripts/build_release.py vX.Y.Z` prepares wheels, locked constraints,
+  the installer, and SHA-256 checksums. GitHub Actions tests macOS/Linux before publishing.
+- The Bash installer must ask through the terminal before installing dependencies,
+  reuse compatible existing tools, and remove any temporary installer-only helper.
+  Keep required runtime dependencies and leave pre-existing software alone.
 - Keep both mypy and Pyright strict. Validate untyped subprocess data at runtime;
   do not hide typing failures with blanket ignores or untyped application APIs.
 - Integration tests use real local media downloads/merges and Chromium, but substitute

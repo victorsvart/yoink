@@ -1,0 +1,62 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          version: "0.13.6"
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Install system tools
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install ffmpeg shellcheck
+            uv run playwright install chromium
+          else
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg shellcheck
+            uv run playwright install --with-deps chromium
+          fi
+      - name: Check code and installer
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy
+          uv run pyright
+          bash -n install.sh
+          shellcheck install.sh
+      - name: Test
+        run: uv run pytest
+      - name: Build
+        run: uv build
+      - name: Check installed command outside the source tree
+        shell: bash
+        run: |
+          uv export --locked --no-dev --no-emit-project --no-hashes \
+            --output-file "$RUNNER_TEMP/yoink-constraints.txt"
+          UV_TOOL_DIR="$RUNNER_TEMP/yoink-tools" UV_TOOL_BIN_DIR="$RUNNER_TEMP/yoink-bin" \
+            uv tool install --python 3.13 --constraints "$RUNNER_TEMP/yoink-constraints.txt" dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/yoink-bin/yoink" --version
+          "$RUNNER_TEMP/yoink-bin/yoink" doctor
